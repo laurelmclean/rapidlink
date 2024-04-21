@@ -8,12 +8,9 @@ RapidLink is a lightweight URL shortener utility designed to simplify the proces
 
 ## Features
 1. **URL Shortening**: Rapidly generate short URLs 
-2. **Simple Interface**: Provide a straightforward command-line interface for generating short URLs
+2. **Simple Interface**: Provide a straightforward user interface for generating short URLs
 3. **Basic Click Tracking**: Implement basic click tracking functionality to count the number of times a shortened URL is accessed
-4. **Customizable Short URLs**: Allow users to customize the shortened URLs manually
-5. **No-frills Implementation**: Focus on essential functionality without adding complex features such as password protection or QR code generation
-6. **Concurrency**: Utilize Golang's concurrency features for efficient performance, especially during URL generation
-
+4. **No-frills Implementation**: Focus on essential functionality without adding complex features such as password protection or QR code generation
 
 ## Benefits
 - **Streamlined Workflow**: RapidLink will simplify the process of sharing URLs within our team, enhancing workflow efficiency.
