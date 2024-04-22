@@ -93,12 +93,17 @@ func handleRedirect(w http.ResponseWriter, r *http.Request) {
 
 func createShortURL() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	const keyLength = 8
+	const keyLength = 6
+
+	const prefix = "awsm-"
 
 	rand.Seed(time.Now().UnixNano())
-	shortKey := make([]byte, keyLength)
-	for i := range shortKey {
+	shortKey := make([]byte, len(prefix)+keyLength)
+	copy(shortKey, prefix)
+
+	for i := len(prefix); i < len(shortKey); i++ {
 		shortKey[i] = charset[rand.Intn(len(charset))]
 	}
 	return string(shortKey)
 }
+
