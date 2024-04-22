@@ -4,27 +4,25 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"strings"
 	"time"
+
+	"github.com/go-chi/chi"
 )
 
 var urls = make(map[string]string)
 
 func main() {
-	http.HandleFunc("/", handleForm)
-	http.HandleFunc("/shorten", handleShorten)
-	http.HandleFunc("/shortened/", handleRedirect)
+	r := chi.NewRouter()
+
+	r.Get("/", handleForm)
+	r.Post("/shorten", handleShorten)
+	r.Get("/shortened/{shortKey}", handleRedirect)
 
 	fmt.Println("RapidLink is running on :3000")
-	http.ListenAndServe(":3000", nil)
+	http.ListenAndServe(":3000", r)
 }
 
 func handleForm(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		http.Redirect(w, r, "/shorten", http.StatusSeeOther)
-		return
-	}
-
 	// HTML form
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, `
@@ -45,11 +43,6 @@ func handleForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleShorten(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
 	originalURL := r.FormValue("url")
 	if originalURL == "" {
 		http.Error(w, "URL is missing", http.StatusBadRequest)
@@ -61,11 +54,11 @@ func handleShorten(w http.ResponseWriter, r *http.Request) {
 	urls[shortKey] = originalURL
 
 	// Construct the shortened URL
-	shortenedURL := fmt.Sprintf("http://localhost:3000/short/%s", shortKey)
+	shortenedURL := fmt.Sprintf("http://localhost:3000/shortened/%s", shortKey)
 
 	// result page
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, `
+	fmt.Fprintf(w, `
 		<!DOCTYPE html>
 		<html>
 		<head>
@@ -73,15 +66,15 @@ func handleShorten(w http.ResponseWriter, r *http.Request) {
 		</head>
 		<body>
 			<h1>RapidLink</h1>
-			<p>URL: `, originalURL, `</p>
-			<p>RapidLink: <a href="`, shortenedURL, `">`, shortenedURL, `</a></p>
+			<p>URL: %s</p>
+			<p>RapidLink: <a href="%s">%s</a></p>
 		</body>
 		</html>
-	`)
+	`, originalURL, shortenedURL, shortenedURL)
 }
 
 func handleRedirect(w http.ResponseWriter, r *http.Request) {
-	shortKey := strings.TrimPrefix(r.URL.Path, "/shortened/")
+	shortKey := chi.URLParam(r, "shortKey")
 	if shortKey == "" {
 		http.Error(w, "Shortened key missing", http.StatusBadRequest)
 		return
