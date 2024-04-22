@@ -5,13 +5,27 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
+	"html/template"
+	"encoding/json"
+	"io/ioutil"
+	"os"
 
 	"github.com/go-chi/chi"
 )
 
+type ResultData struct {
+	OriginalURL  string `json:"original"`
+	ShortenedURL string `json:"shortened"`
+}
+
 var urls = make(map[string]string)
+var templates = template.Must(template.ParseFiles("form.html", "result.html"))
+var filename = "urls.json"
+
 
 func main() {
+	loadURLsFromFile() 
+
 	r := chi.NewRouter()
 
 	r.Get("/", handleForm)
@@ -23,23 +37,10 @@ func main() {
 }
 
 func handleForm(w http.ResponseWriter, r *http.Request) {
-	// HTML form
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, `
-		<!DOCTYPE html>
-		<html>
-		<head>
-			<title>RapidLink</title>
-		</head>
-		<body>
-			<h1>RapidLink</h1>
-			<form method="post" action="/shorten">
-				<input type="url" name="url" placeholder="Enter the URL" required>
-				<input type="submit" value="Generate RapidLink">
-			</form>
-		</body>
-		</html>
-	`)
+	// Render the form template
+	if err := templates.ExecuteTemplate(w, "form.html", nil); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 func handleShorten(w http.ResponseWriter, r *http.Request) {
@@ -53,25 +54,24 @@ func handleShorten(w http.ResponseWriter, r *http.Request) {
 	shortKey := createShortURL()
 	urls[shortKey] = originalURL
 
+	// Save the URLs to the file
+    saveURLsToFile()
+
 	// Construct the shortened URL
 	shortenedURL := fmt.Sprintf("http://localhost:3000/shortened/%s", shortKey)
 
-	// result page
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprintf(w, `
-		<!DOCTYPE html>
-		<html>
-		<head>
-			<title>RapidLink</title>
-		</head>
-		<body>
-			<h1>RapidLink</h1>
-			<p>URL: %s</p>
-			<p>RapidLink: <a href="%s">%s</a></p>
-		</body>
-		</html>
-	`, originalURL, shortenedURL, shortenedURL)
+	// Prepare data to pass to the template
+	data := ResultData{
+		OriginalURL:  originalURL,
+		ShortenedURL: shortenedURL,
+	}
+
+	// Render the result template with the data
+	if err := templates.ExecuteTemplate(w, "result.html", data); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
+
 
 func handleRedirect(w http.ResponseWriter, r *http.Request) {
 	shortKey := chi.URLParam(r, "shortKey")
@@ -105,5 +105,31 @@ func createShortURL() string {
 		shortKey[i] = charset[rand.Intn(len(charset))]
 	}
 	return string(shortKey)
+}
+
+func saveURLsToFile() error {
+    data, err := json.Marshal(urls)
+    if err != nil {
+        return err
+    }
+    return ioutil.WriteFile(filename, data, 0644)
+}
+
+func loadURLsFromFile() {
+    file, err := os.Open(filename)
+    if err != nil {
+        return
+    }
+    defer file.Close()
+
+    data, err := ioutil.ReadAll(file)
+    if err != nil {
+        return
+    }
+
+    err = json.Unmarshal(data, &urls)
+    if err != nil {
+        return
+    }
 }
 
