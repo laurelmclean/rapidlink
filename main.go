@@ -1,36 +1,37 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"html/template"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"time"
-	"html/template"
-	"encoding/json"
-	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/skip2/go-qrcode"
 )
 
-type ResultData struct {
-	OriginalURL  string `json:"original"`
-	ShortenedURL string `json:"shortened"`
+type URLMap struct {
+	ShortKey    string `json:"rapidLink"`
+	OriginalURL string `json:"originalURL"`
 }
 
-var urls = make(map[string]string)
+var urlMap = make(map[string]URLMap)
 var templates = template.Must(template.ParseFiles("form.html", "result.html"))
 var filename = "urls.json"
 
-
 func main() {
-	loadURLsFromFile() 
+	loadURLsFromFile()
 
 	r := chi.NewRouter()
 
 	r.Get("/", handleForm)
 	r.Post("/shorten", handleShorten)
 	r.Get("/shortened/{shortKey}", handleRedirect)
+	r.Get("/qrcode", handleQRCode)
 
 	fmt.Println("RapidLink is running on :3000")
 	http.ListenAndServe(":3000", r)
@@ -52,18 +53,18 @@ func handleShorten(w http.ResponseWriter, r *http.Request) {
 
 	// Generate short link key for URL
 	shortKey := createShortURL()
-	urls[shortKey] = originalURL
+	urlMap[shortKey] = URLMap{ShortKey: shortKey, OriginalURL: originalURL}
 
 	// Save the URLs to the file
-    saveURLsToFile()
+	saveURLsToFile()
 
 	// Construct the shortened URL
 	shortenedURL := fmt.Sprintf("http://localhost:3000/shortened/%s", shortKey)
 
 	// Prepare data to pass to the template
-	data := ResultData{
+	data := URLMap{
 		OriginalURL:  originalURL,
-		ShortenedURL: shortenedURL,
+		ShortKey: shortenedURL,
 	}
 
 	// Render the result template with the data
@@ -72,7 +73,6 @@ func handleShorten(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func handleRedirect(w http.ResponseWriter, r *http.Request) {
 	shortKey := chi.URLParam(r, "shortKey")
 	if shortKey == "" {
@@ -80,21 +80,22 @@ func handleRedirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Retrieve the original URL from the urls map using shortened key
-	originalURL, found := urls[shortKey]
+	// Retrieve the original URL from the urlMap using shortened key
+	urlData, found := urlMap[shortKey]
 	if !found {
 		http.Error(w, "Shortened url key not found", http.StatusNotFound)
 		return
 	}
 
 	// Redirect to the original URL
-	http.Redirect(w, r, originalURL, http.StatusMovedPermanently)
+	http.Redirect(w, r, urlData.OriginalURL, http.StatusMovedPermanently)
 }
 
 func createShortURL() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	const keyLength = 6
 
+	// branded prefix
 	const prefix = "awsm-"
 
 	rand.Seed(time.Now().UnixNano())
@@ -107,29 +108,51 @@ func createShortURL() string {
 	return string(shortKey)
 }
 
-func saveURLsToFile() error {
-    data, err := json.Marshal(urls)
-    if err != nil {
-        return err
+// Handler function for generating QR code
+func handleQRCode(w http.ResponseWriter, r *http.Request) {
+    data := r.URL.Query().Get("data")
+    if data == "" {
+        http.Error(w, "Data is missing", http.StatusBadRequest)
+        return
     }
-    return ioutil.WriteFile(filename, data, 0644)
+    // Generate QR code
+    qrCode, err := qrcode.Encode(data, qrcode.Medium, 256)
+    if err != nil {
+        http.Error(w, "Failed to generate QR code", http.StatusInternalServerError)
+        return
+    }
+    w.Header().Set("Content-Type", "image/png")
+    // Write QR code image to response
+    _, _ = w.Write(qrCode)
 }
+
+func saveURLsToFile() error {
+	urlList := make([]URLMap, 0, len(urlMap))
+	for _, v := range urlMap {
+		urlList = append(urlList, v)
+	}
+	data, err := json.Marshal(urlList)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(filename, data, 0644)
+}
+
 
 func loadURLsFromFile() {
-    file, err := os.Open(filename)
-    if err != nil {
-        return
-    }
-    defer file.Close()
+	file, err := os.Open(filename)
+	if err != nil {
+		return
+	}
+	defer file.Close()
 
-    data, err := ioutil.ReadAll(file)
-    if err != nil {
-        return
-    }
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return
+	}
 
-    err = json.Unmarshal(data, &urls)
-    if err != nil {
-        return
-    }
+	err = json.Unmarshal(data, &urlMap)
+	if err != nil {
+		return
+	}
 }
-

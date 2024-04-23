@@ -7,8 +7,10 @@
 
 <body>
     <h1>RapidLink</h1>
-    <p>URL: {{ .OriginalURL }}</p>
-    <p>RapidLink: <a href="{{ .ShortenedURL }}">{{ .ShortenedURL }}</a></p>
+    <p>URL: <a href="{{ .OriginalURL }}">{{ .OriginalURL }}</a></p>
+    <p>RapidLink: <a href="{{ .ShortKey }}">{{ .ShortKey }}</a></p>
+        <img src="/qrcode?data={{ .OriginalURL }}" alt="QR Code" />
+
 </body>
 
 </html>
