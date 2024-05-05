@@ -20,6 +20,9 @@ func TestCreateShortURL(t *testing.T) {
             if len(shortURL) != tc.length {
                 t.Errorf("Expected length %d, got %d", tc.length, len(shortURL))
             }
+            if shortURL[0:5] != tc.prefix {
+                t.Errorf("Expected prefix %s, got %s", tc.prefix, shortURL[0:5])
+            }
         })
     }
 }
