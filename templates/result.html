@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>RapidLink</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+
+<body>
+    {{template "header.html" .}}
+    <div class="container">
+
+        <p>URL: <a href="{{ .OriginalURL }}">{{ .OriginalURL }}</a></p>
+        <p>RapidLink: <a href="{{ .ShortKey }}">{{ .ShortKey }}</a></p>
+        <img src="/qrcode?data={{ .OriginalURL }}" alt="QR Code" />
+
+    </div>
+    {{ template "footer.html" . }}
+</body>
+
+</html>

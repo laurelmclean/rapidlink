@@ -20,7 +20,7 @@ type URLMap struct {
 }
 
 var urlMap = make(map[string]URLMap)
-var templates = template.Must(template.ParseFiles("form.html", "result.html"))
+var templates = template.Must(template.ParseGlob("templates/*.html"))
 var filename = "urls.json"
 
 func main() {
