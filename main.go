@@ -59,7 +59,7 @@ func handleShorten(w http.ResponseWriter, r *http.Request) {
 	saveURLsToFile()
 
 	// Construct the shortened URL
-	shortenedURL := fmt.Sprintf("http://localhost:3000/shortened/%s", shortKey)
+	shortenedURL := fmt.Sprintf("http://localhost:3000/%s", shortKey)
 
 	// Prepare data to pass to the template
 	data := URLMap{
