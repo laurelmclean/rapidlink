@@ -30,7 +30,7 @@ func main() {
 
 	r.Get("/", handleForm)
 	r.Post("/shorten", handleShorten)
-	r.Get("/shortened/{shortKey}", handleRedirect)
+	r.Get("/{shortKey}", handleRedirect)
 	r.Get("/qrcode", handleQRCode)
 
 	fmt.Println("RapidLink is running on :3000")
