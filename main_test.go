@@ -14,8 +14,8 @@ func TestCreateShortURL(t *testing.T) {
         prefix string
         length int
     }{
-        {url: "www.example.com", prefix: "awsm-", length: 11},
-        {url: "www.anotherexample.com", prefix: "awsm-", length: 11},
+        {url: "www.example.com", prefix: "rapid-", length: 12},
+        {url: "www.anotherexample.com", prefix: "rapid-", length: 12},
     }
 
     for _, tc := range testCases {

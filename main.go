@@ -33,8 +33,13 @@ func main() {
 	r.Get("/{shortKey}", handleRedirect)
 	r.Get("/qrcode", handleQRCode)
 
-	fmt.Println("RapidLink is running on :3000")
-	http.ListenAndServe(":3000", r)
+	port := os.Getenv("PORT")
+    if port == "" {
+        port = "10000" // Default to port 10000 if not provided
+    }
+
+ 	fmt.Printf("RapidLink is running on :%s\n", port)
+    http.ListenAndServe(":"+port, r)
 }
 
 func handleForm(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +64,7 @@ func handleShorten(w http.ResponseWriter, r *http.Request) {
 	saveURLsToFile()
 
 	// Construct the shortened URL
-	shortenedURL := fmt.Sprintf("http://localhost:3000/%s", shortKey)
+	shortenedURL := fmt.Sprintf("http://localhost:10000/%s", shortKey)
 
 	// Prepare data to pass to the template
 	data := URLMap{
@@ -96,7 +101,7 @@ func createShortURL() string {
 	const keyLength = 6
 
 	// branded prefix
-	const prefix = "awsm-"
+	const prefix = "rapid-"
 
 	rand.Seed(time.Now().UnixNano())
 	shortKey := make([]byte, len(prefix)+keyLength)
